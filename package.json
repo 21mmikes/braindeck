@@ -1,0 +1,30 @@
+{
+  "name": "ai-flashcards",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered flashcard platform with Anki-style spaced repetition",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
+    "better-sqlite3": "^11.10.0",
+    "fast-xml-parser": "^4.5.1",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.9.0",
+    "next": "15.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "unpdf": "^0.12.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

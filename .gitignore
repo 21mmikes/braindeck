@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+
+# Your secret API key must never be committed
+.env
+.env.local
+
+# Local study database and uploaded files
+data/
+*.db
+*.sqlite
