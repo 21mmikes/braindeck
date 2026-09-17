@@ -1,154 +1,106 @@
-<div align="center">
+# BrainDeck
 
-# 🧠 BrainDeck
+A local web application that turns study documents into spaced repetition flashcards.
 
-### Turn any document into flashcards that stick.
+Upload a PDF, Word document or PowerPoint file. The text is extracted on your own machine and
+sent to Claude, which writes question-and-answer cards from it. Review is then scheduled with an
+implementation of the SM-2 algorithm, so cards you find difficult return sooner than cards you
+find easy.
 
-Drop in a PDF, Word document or PowerPoint. Claude writes the questions.
-An SM-2 spaced repetition schedule decides when you see each card again.
+Written as a final year project.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-local-003B57?logo=sqlite&logoColor=white)
-![Claude](https://img.shields.io/badge/AI-Claude-D97757)
-![Licence](https://img.shields.io/badge/licence-MIT-green)
+## Requirements
 
-<!-- Replace with your own screenshot: docs/screenshots/hero.png -->
-<img src="docs/screenshots/hero.png" alt="BrainDeck study screen" width="760">
+- Node.js 18 or newer
+- An Anthropic API key from console.anthropic.com
 
-</div>
-
----
-
-## What it does
-
-- **📄 Reads your real study material** — PDF, Word `.docx`, PowerPoint `.pptx`, `.txt` and `.md`
-- **🤖 Writes the cards for you** — Claude turns the document into one-fact-per-card Q&A pairs, following established card-design rules
-- **🔁 Schedules them properly** — an independent TypeScript implementation of the SM-2 algorithm, with learning steps, ease factors, lapses and interval fuzz
-- **📚 Remembers everything** — a permanent library of every document you have uploaded and every deck it produced
-- **📊 Tracks your progress** — retention rate, daily workload and a 14-day review history
-
----
-
-## Quick start
-
-You need [Node.js 18 or newer](https://nodejs.org) and an [Anthropic API key](https://console.anthropic.com).
+## Running it
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then paste your API key into .env.local
+cp .env.local.example .env.local
+```
+
+Open `.env.local`, paste in your API key, then:
+
+```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** and drop in a document.
+The application runs at http://localhost:3000.
 
----
+## Supported formats
+
+PDF, `.docx`, `.pptx`, `.txt` and `.md`.
+
+Scanned PDFs are rejected with an explanatory message rather than producing an empty deck, since
+a scan has no text layer to extract. Optical character recognition is not implemented.
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A[📄 Document] --> B[Text extraction<br/>unpdf · mammoth · jszip]
-    B --> C[Claude<br/>card generation]
-    C --> D[(SQLite<br/>data/flashcards.db)]
-    D --> E[🃏 Flip-card reviewer]
-    E --> F[SM-2 scheduler]
-    F --> D
-```
-
-1. The file is parsed **on your machine** — only the extracted text is sent to Claude.
-2. Claude returns strict JSON: a deck title, a summary, and the cards.
-3. Everything is written to one SQLite file in a single transaction.
-4. Study mode serves only the cards that are due, newest cards last.
-5. Grading a card runs the scheduler and appends to an immutable review log.
-
----
+1. The uploaded file is parsed locally. Only the extracted text is sent to the Claude API; the
+   file itself never leaves the machine.
+2. Claude returns JSON containing a deck title, a summary and the cards. The response is parsed
+   defensively, so one malformed card costs one card rather than the whole deck.
+3. The document, deck and cards are written to a single SQLite file in one transaction.
+4. The review screen serves only cards whose due date has passed, with unseen cards last.
+5. Grading a card updates its scheduling state and appends a row to a review log, which is only
+   ever added to.
 
 ## Project structure
 
 ```
 src/
-├── app/
-│   ├── page.tsx          Upload screen
-│   ├── library/          Deck list + searchable card browser
-│   ├── study/[id]/       The flip-card reviewer
-│   ├── stats/            Progress dashboard
-│   └── api/              generate · decks · study · review · stats
-├── components/Nav.tsx
-└── lib/
-    ├── ai.ts             Prompt engineering + Claude call
-    ├── db.ts             Schema and queries
-    ├── extract.ts        PDF / DOCX / PPTX parsing
-    └── scheduler.ts      The SM-2 spaced repetition algorithm
+  app/
+    page.tsx          Upload screen
+    library/          Deck list and card browser
+    study/[id]/       Review screen
+    stats/            Progress dashboard
+    api/              generate, decks, study, review, stats
+  components/
+    Nav.tsx
+  lib/
+    ai.ts             Prompt construction and the Claude API call
+    db.ts             Database schema and queries
+    extract.ts        PDF, DOCX and PPTX text extraction
+    scheduler.ts      The SM-2 scheduling algorithm
+scripts/
+  test-scheduler.ts   Scheduler test harness
 ```
 
----
+## Tests
 
-## Testing the algorithm
-
-The scheduler has no dependencies, so its test harness runs without installing anything:
+The scheduler depends on nothing, so its tests run without installing anything:
 
 ```bash
 node --experimental-strip-types scripts/test-scheduler.ts
 ```
 
-27 assertions covering every state transition, the safety rails (ease floor, interval cap) and a
-30-day study simulation.
-
----
+27 assertions covering every state transition, the ease floor and interval cap, and a thirty-day
+study simulation.
 
 ## Configuration
 
-Everything lives in `.env.local`:
+Set in `.env.local`:
 
-| Variable | Default | What it does |
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | — | Your key from console.anthropic.com |
-| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Use `claude-haiku-4-5-20251001` for cheaper, faster generation |
-| `CARDS_PER_DOCUMENT` | `25` | Roughly how many cards to aim for |
+| `ANTHROPIC_API_KEY` | — | Your API key |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Model used for generation |
+| `CARDS_PER_DOCUMENT` | `25` | Target number of cards per document |
 
-To change how aggressively the app schedules you, edit `CONFIG` at the top of
-`src/lib/scheduler.ts` — learning steps, graduating interval, ease bonus and the interval cap are
-all in one object.
+Scheduling behaviour — learning steps, graduating interval, ease bonus and interval cap — is in
+the `CONFIG` object at the top of `src/lib/scheduler.ts`. Interface colours are in the `:root`
+block at the top of `src/app/globals.css`.
 
-To change the look, edit the `:root` colour variables at the top of `src/app/globals.css`.
+## Attribution and licence
 
----
+The scheduler is an independent implementation of the SM-2 algorithm, written from the published
+specification and from publicly documented behaviour. No source code from Anki or any other
+application is included in this repository. Anki is licensed under AGPL-3.0-or-later; an algorithm
+is not itself copyrightable, which is why this project carries its own licence. Where Anki's
+documented behaviour informed a decision, the source comments say so.
 
-## Screenshots
+Released under the MIT Licence — see `LICENSE`.
 
-| Upload | Study | Library |
-| --- | --- | --- |
-| ![](docs/screenshots/upload.png) | ![](docs/screenshots/study.png) | ![](docs/screenshots/library.png) |
-
----
-
-## Project report
-
-`docs/generate_project_report.py` builds a full Word document explaining the architecture, the
-scheduling strategy and the cognitive science behind spaced repetition:
-
-```bash
-pip3 install python-docx
-python3 docs/generate_project_report.py
-```
-
----
-
-## Credits and licensing
-
-The spaced repetition scheduler is an **independent reimplementation** of the documented SM-2
-behaviour used by [Anki](https://github.com/ankitects/anki) — no Anki source code is included in
-this repository. Anki is licensed **AGPL-3.0-or-later**; algorithms themselves are not
-copyrightable, which is why this project can carry its own licence. Anki's influence is credited in
-the source comments where it applies.
-
-Built with [Next.js](https://nextjs.org), [Claude](https://claude.com) and
-[better-sqlite3](https://github.com/WiseLibs/better-sqlite3).
-
----
-
-<div align="center">
-<sub>Made for students who would rather revise than type.</sub>
-</div>
+Built with Next.js, React, TypeScript, better-sqlite3 and the Anthropic API.
