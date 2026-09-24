@@ -85,7 +85,7 @@ Set in `.env.local`:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | — | Your API key |
+| `ANTHROPIC_API_KEY` | — | API key |
 | `ANTHROPIC_MODEL` | `claude-sonnet-5` | Model used for generation |
 | `CARDS_PER_DOCUMENT` | `25` | Target number of cards per document |
 
@@ -97,10 +97,6 @@ block at the top of `src/app/globals.css`.
 
 The scheduler is an independent implementation of the SM-2 algorithm, written from the published
 specification and from publicly documented behaviour. No source code from Anki or any other
-application is included in this repository. Anki is licensed under AGPL-3.0-or-later; an algorithm
-is not itself copyrightable, which is why this project carries its own licence. Where Anki's
-documented behaviour informed a decision, the source comments say so.
-
-Released under the MIT Licence — see `LICENSE`.
+application is included in this repository. 
 
 Built with Next.js, React, TypeScript, better-sqlite3 and the Anthropic API.
